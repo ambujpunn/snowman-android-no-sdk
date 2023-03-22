@@ -31,10 +31,15 @@ import android.util.Log;
 import io.branch.indexing.BranchUniversalObject;
 import io.branch.referral.Branch;
 import io.branch.referral.BranchError;
+import io.branch.referral.util.BranchContentSchema;
+import io.branch.referral.util.BranchEvent;
+import io.branch.referral.util.BRANCH_STANDARD_EVENT;
+import io.branch.referral.util.ContentMetadata;
+import io.branch.referral.util.CurrencyType;
 import io.branch.referral.util.LinkProperties;
+import io.branch.referral.util.ProductCategory;
 
 public class MainActivity extends AppCompatActivity {
-
 //    private AppBarConfiguration appBarConfiguration;
 //    private ActivityMainBinding binding;
 
@@ -103,6 +108,30 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).withData(this.getIntent().getData()).init();
+
+
+        // Tracking a random Branch "purchase" event
+
+        // Create Branch Universal Object first
+        BranchUniversalObject buo = new BranchUniversalObject()
+                .setCanonicalIdentifier("myprod/1234")
+                .setCanonicalUrl("https://test_canonical_url")
+                .setTitle("test_title")
+                .setContentMetadata(
+                        new ContentMetadata()
+                                .addCustomMetadata("restaurant", "Robertos")
+                                .setPrice(10.0, CurrencyType.USD)
+                                .setProductBrand("snowman")
+                                .setProductCategory(ProductCategory.FOOD_BEVERAGES_AND_TOBACCO)
+                                .setProductName("california burrito")
+                                .setProductCondition(ContentMetadata.CONDITION.EXCELLENT));
+
+        new BranchEvent(BRANCH_STANDARD_EVENT.ADD_TO_CART)
+                .setCurrency(CurrencyType.USD)
+                .setSearchQuery("Test Search query")
+                .addCustomDataProperty("Location", "Encinitas")
+                .addContentItems(buo)
+                .logEvent(getApplicationContext());
     }
 
     @Override
