@@ -8,10 +8,10 @@
 
     <ImageView
         android:id="@+id/snowmanImageView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_height="4dp"
         android:contentDescription="Snowman"
-        android:src="path/to/file"
+        android:src="@mipmap/snowman_base"
         app:layout_constraintBottom_toTopOf="@id/accessorySelectionContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

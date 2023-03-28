@@ -23,9 +23,23 @@ import android.widget.Button;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import io.branch.referral.Branch;
+
+import org.json.JSONObject;
+
+import android.util.Log;
+import io.branch.indexing.BranchUniversalObject;
+import io.branch.referral.Branch;
+import io.branch.referral.BranchError;
+import io.branch.referral.util.BranchContentSchema;
+import io.branch.referral.util.BranchEvent;
+import io.branch.referral.util.BRANCH_STANDARD_EVENT;
+import io.branch.referral.util.ContentMetadata;
+import io.branch.referral.util.CurrencyType;
+import io.branch.referral.util.LinkProperties;
+import io.branch.referral.util.ProductCategory;
 
 public class MainActivity extends AppCompatActivity {
-
 //    private AppBarConfiguration appBarConfiguration;
 //    private ActivityMainBinding binding;
 
@@ -34,6 +48,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Branch logging for debugging
+        Branch.enableLogging();
+
+        // Branch object initialization
+        Branch.getAutoInstance(this);
 
 //        binding = ActivityMainBinding.inflate(getLayoutInflater());
 //        setContentView(binding.getRoot());
@@ -62,6 +82,73 @@ public class MainActivity extends AppCompatActivity {
 //                startDesignActivity();
 //            }
 //        });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Branch.sessionBuilder(this).withCallback(new Branch.BranchUniversalReferralInitListener() {
+            @Override
+            public void onInitFinished(BranchUniversalObject branchUniversalObject, LinkProperties linkProperties, BranchError error) {
+                if (error != null) {
+                    Log.e("BranchSDK_Tester", "branch init failed. Caused by -" + error.getMessage());
+                } else {
+                    Log.i("BranchSDK_Tester", "branch init complete!");
+                    if (branchUniversalObject != null) {
+                        Log.i("BranchSDK_Tester", "title " + branchUniversalObject.getTitle());
+                        Log.i("BranchSDK_Tester", "CanonicalIdentifier " + branchUniversalObject.getCanonicalIdentifier());
+                        Log.i("BranchSDK_Tester", "metadata " + branchUniversalObject.getContentMetadata().convertToJson());
+                    }
+
+                    if (linkProperties != null) {
+                        Log.i("BranchSDK_Tester", "Channel " + linkProperties.getChannel());
+                        Log.i("BranchSDK_Tester", "control params " + linkProperties.getControlParams());
+                    }
+                }
+            }
+        }).withData(this.getIntent().getData()).init();
+
+
+        // Tracking a random Branch "purchase" event
+
+        // Create Branch Universal Object first
+        BranchUniversalObject buo = new BranchUniversalObject()
+                .setCanonicalIdentifier("myprod/1234")
+                .setCanonicalUrl("https://test_canonical_url")
+                .setTitle("test_title")
+                .setContentMetadata(
+                        new ContentMetadata()
+                                .addCustomMetadata("restaurant", "Robertos")
+                                .setPrice(10.0, CurrencyType.USD)
+                                .setProductBrand("snowman")
+                                .setProductCategory(ProductCategory.FOOD_BEVERAGES_AND_TOBACCO)
+                                .setProductName("california burrito")
+                                .setProductCondition(ContentMetadata.CONDITION.EXCELLENT));
+
+        new BranchEvent(BRANCH_STANDARD_EVENT.ADD_TO_CART)
+                .setCurrency(CurrencyType.USD)
+                .setSearchQuery("Test Search query")
+                .addCustomDataProperty("Location", "Encinitas")
+                .addContentItems(buo)
+                .logEvent(getApplicationContext());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        this.setIntent(intent);
+        Branch.sessionBuilder(this).withCallback(new Branch.BranchReferralInitListener() {
+            @Override
+            public void onInitFinished(JSONObject referringParams, BranchError error) {
+                if (error != null) {
+                    Log.e("BranchSDK_Tester", error.getMessage());
+                } else if (referringParams != null) {
+                    Log.i("BranchSDK_Tester", referringParams.toString());
+                }
+            }
+        }).reInit();
     }
 
     private void startDesignActivity() {
